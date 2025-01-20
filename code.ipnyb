@@ -1,0 +1,183 @@
+!pip install pandas
+!pip install plotly
+!pip install imageio
+!pip install imageio[ffmpeg]
+!pip install -U kaleido
+
+
+import pandas as pd
+import plotly.graph_objects as go
+
+# Load earthquake data
+df = pd.read_csv("earthquake_data_2020_2024.csv")
+
+# Normalize marker size based on magnitude (with a dynamic range)
+min_size = 4  # Minimum marker size
+max_size = 10  # Maximum marker size
+df["marker_size"] = ((df["magnitude"] - df["magnitude"].min()) / 
+                     (df["magnitude"].max() - df["magnitude"].min()) * 
+                     (max_size - min_size) + min_size)
+
+# Create a 3D scatter plot on a globe
+fig = go.Figure()
+
+# Add earthquake data
+fig.add_trace(
+    go.Scattergeo(
+        lon=df["longitude"],
+        lat=df["latitude"],
+        text=df["place"] + "<br>Magnitude: " + df["magnitude"].astype(str) + 
+             "<br>Depth: " + df["depth"].astype(str) + " km",  # Add depth to hover text
+        mode="markers",
+        marker=dict(
+            size=df["marker_size"],  # Use the normalized marker size for magnitude
+            color=df["magnitude"],  # Use depth as the color scale
+            colorscale="RdYlBu",  # Perceptually uniform colorscale for depth
+            cmin=df["magnitude"].min(),  # Minimum depth for color scaling
+            cmax=df["magnitude"].max(),  # Maximum depth for color scaling
+            colorbar=dict(
+                title="Magnitude",  # Add a title to the colorbar
+                len=0.6,  # Adjust the length of the colorbar (as a fraction of the plot height)
+                thickness=20,  # Set the thickness of the colorbar in pixels
+                x=1.1,  # Position the colorbar slightly outside the plot (horizontally)
+                tickfont=dict(size=12),  # Set font size for tick labels
+            ),
+            opacity=0.8,  # Set marker transparency
+        ),
+    )
+)
+
+# Customize globe appearance
+fig.update_geos(
+    projection_type="orthographic",  # Globe-like projection
+    showcoastlines=True,
+    coastlinecolor="black",
+    showland=True,
+    landcolor="lightgray",
+    showocean=True,
+    oceancolor="#30b1ce",
+    showlakes=True,
+    lakecolor="#64a8a8",
+    showcountries=False,
+    countrycolor="blue",
+)
+
+# Set layout and title
+fig.update_layout(
+    title={
+        "text": "Earthquakes (2020-2024) on a 3D Globe",  # Title text
+        "x": 0.5,  # Center the title horizontally
+        "xanchor": "center",  # Set the title's anchor to the center
+        "yanchor": "top",  # Align the title vertically to the top
+        "font": {
+            "family": "Arial",  # Set font family
+            "size": 24,  # Set font size
+            "color": "black",  # Set font color
+            "weight": "bold",  # Make the title bold
+        }
+    },
+    height=800,  # Set plot height
+    margin={"r": 0, "t": 50, "l": 0, "b": 0},  # Adjust margins
+  )
+# Show the plot
+fig.show()
+
+  # Save the plot as an HTML file
+output_path = "Earthquake_Globe_2020_2024.html"
+fig.write_html(output_path)
+
+  import pandas as pd
+import plotly.graph_objects as go
+import os
+import imageio.v2 as imageio  # Updated import to suppress the warning
+
+# Load earthquake data
+df = pd.read_csv("earthquake_data_2020_2024.csv")
+
+# Normalize marker size based on magnitude
+min_size = 4
+max_size = 10
+df["marker_size"] = ((df["magnitude"] - df["magnitude"].min()) /
+                     (df["magnitude"].max() - df["magnitude"].min()) *
+                     (max_size - min_size) + min_size)
+
+# Directory to save frames
+frames_dir = "frames"
+os.makedirs(frames_dir, exist_ok=True)
+
+# Calculate frame details for a 30-second video
+fps = 30  # Frames per second
+total_frames = fps * 30  # Total frames for a 30-second video
+rotation_step = 360 / total_frames  # Rotation step size per frame
+frame_paths = []
+
+# Generate frames for the animation
+for frame_idx in range(total_frames):
+    angle = frame_idx * rotation_step  # Current rotation angle
+    
+    # Create figure
+    fig = go.Figure()
+    
+    # Add earthquake data
+    fig.add_trace(
+        go.Scattergeo(
+            lon=df["longitude"],
+            lat=df["latitude"],
+            text=df["place"] + "<br>Magnitude: " + df["magnitude"].astype(str),
+            mode="markers",
+            marker=dict(
+                size=df["marker_size"],
+                color=df["magnitude"],
+                colorscale="RdYlBu",
+                cmin=df["magnitude"].min(),
+                cmax=df["magnitude"].max(),
+                colorbar=dict(title="Magnitude"),
+                opacity=1,
+            ),
+        )
+    )
+    
+    # Customize globe appearance
+    fig.update_geos(
+        projection_type="orthographic",
+        showcoastlines=True,
+        coastlinecolor="black",
+        showland=True,
+        landcolor="lightgray",
+        showocean=True,
+        oceancolor="#30b1ce",
+        showlakes=True,
+        lakecolor="#64a8a8",
+        showcountries=False,
+    )
+    
+    # Rotate the globe
+    fig.update_geos(projection_rotation=dict(lon=angle))
+    
+    # Layout settings with centered title
+    fig.update_layout(
+        title=dict(
+            text="Earthquakes (2020-2024) on a 3D Rotating Globe",
+            x=0.5,  # Center the title
+            xanchor='center',
+            yanchor='top',
+            font=dict(size=24)  # Adjust font size if needed
+        ),
+        height=1600,  # High resolution
+        width=1600,   # High resolution
+        margin={"r": 0, "t": 50, "l": 0, "b": 0},
+    )
+    
+    # Save the frame
+    frame_path = os.path.join(frames_dir, f"frame_{frame_idx:03d}.png")
+    fig.write_image(frame_path, width=1600, height=1600)
+    frame_paths.append(frame_path)
+
+# Create an animation video
+output_video = "Earthquake_Globe_Animation.mp4"
+with imageio.get_writer(output_video, fps=fps) as writer:
+    for frame_path in frame_paths:
+        image = imageio.imread(frame_path)
+        writer.append_data(image)
+
+print(f"30-second animation saved at {output_video}")
