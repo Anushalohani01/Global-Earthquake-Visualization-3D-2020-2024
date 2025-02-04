@@ -1,4 +1,5 @@
-Earthquake Visualization on a 3D Interactive Globe (2020–2024)
+Earthquake Visualization on a 3D Interactive Globe (2020–2024):
+
 This project visualizes global earthquake occurrences from 2020 to 2024 using an interactive 3D globe in Python. It offers an engaging way to explore earthquake distribution based on magnitude, depth, and location, making it useful for education, research, and geospatial data enthusiasts.
 
 Overview
